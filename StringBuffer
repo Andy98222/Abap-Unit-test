@@ -1,0 +1,89 @@
+
+class lstringbuffer definition  .
+PUBLIC SECTION.
+types: tt_char_tab type table of c WITH EMPTY KEY .
+  METHODS:
+    push IMPORTING string   TYPE any
+         RETURNING VALUE(r) TYPE REF TO lstringbuffer,
+    pop
+      EXPORTING popped   TYPE string
+      RETURNING VALUE(r) TYPE REF TO lstringbuffer
+      ,
+    tostring IMPORTING separator       TYPE clike OPTIONAL
+             RETURNING VALUE(r_string) TYPE string,
+    get_char_tab
+    RETURNING VALUE(r_char_tab) TYPE tt_char_tab,
+    condense
+      IMPORTING !no_gaps TYPE abap_bool optional
+      RETURNING VALUE(r) TYPE REF TO lstringbuffer.
+
+private section.
+  data buffer type string_table.
+
+
+    endclass.
+
+
+class lstringbuffer implementation.
+
+  METHOD push.
+    DATA: lstring TYPE string,
+          descr   TYPE REF TO cl_abap_typedescr.
+
+    lstring = CONV string( string ).
+    descr = cl_abap_typedescr=>describe_by_data( string ).
+
+    " Conditionally condense if the type is not character-like
+    IF NOT ( descr->type_kind = cl_abap_typedescr=>typekind_string OR
+             descr->type_kind = cl_abap_typedescr=>typekind_char   OR
+             descr->type_kind = cl_abap_typedescr=>typekind_clike  OR
+             descr->type_kind = cl_abap_typedescr=>typekind_csequence ).
+
+      CONDENSE lstring.
+    ENDIF.
+    APPEND lstring TO buffer.
+
+    r = me.
+  ENDMETHOD.
+
+  METHOD pop.
+    DATA(lines) = lines( buffer ).
+    IF lines NE 0.
+      popped = buffer[ lines ].
+      DELETE buffer INDEX ( lines( buffer ) ).
+    ENDIF.
+    r = me.
+  ENDMETHOD.
+  METHOD tostring.
+    r_string = REDUCE string( INIT tostring = `` counter = lines( buffer )
+                       FOR line IN buffer
+                       NEXT tostring = COND #(  WHEN counter > 1 THEN
+                                      tostring && |{ line }| && |{ separator }|
+                                       ELSE  tostring && |{ line }| )
+                            counter -= 1 ).
+
+  ENDMETHOD.
+
+  METHOD condense.
+    LOOP AT buffer
+    ASSIGNING FIELD-SYMBOL(<buffer>).
+      IF  no_gaps = abap_false.
+        CONDENSE <buffer>.
+      ELSE.
+        CONDENSE <buffer> NO-GAPS.
+      ENDIF.
+    ENDLOOP.
+    r = me.
+  ENDMETHOD.
+
+
+  METHOD get_char_tab.
+    DATA(result_string) = tostring( ).
+    DATA(lenght) = strlen( result_string ).
+
+    r_char_tab = VALUE #( FOR i = 0 WHILE i < lenght ( CONV #(  result_string+i(1) ) ) ).
+
+
+  ENDMETHOD.
+
+endclass.
