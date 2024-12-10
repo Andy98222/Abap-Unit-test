@@ -1,0 +1,126 @@
+
+CLASS ltcl_ DEFINITION DEFERRED.
+CLASS zzdemo_roman_numbers_conv_tdd DEFINITION LOCAL FRIENDS ltcl_.
+class ltcl_ definition final for testing
+  duration short
+  risk level harmless
+  INHERITING FROM zcl_unit_test.
+
+  private section.
+  DATA cud TYPE ref to zzdemo_roman_numbers_conv_tdd.
+  types: begin of test_case,
+         tc type I,
+         exp type string,
+         end of TEST_CASE.
+  types tt_test_cases type TABLE of test_case.
+    CLASS-METHODS class_setup.
+     class-data tc_roman type tt_test_cases.
+     class-data tc_char_tab type tt_test_cases.
+    methods:
+      test_conversion for testing raising cx_static_check,
+    test_to_string FOR TESTING RAISING cx_static_check,
+    test_casting_to_char FOR TESTING RAISING cx_static_check,
+    test_char_tab FOR TESTING RAISING cx_static_check,
+
+    setup,
+    teardown.
+endclass.
+
+
+class ltcl_ implementation.
+METHOD class_setup.
+  "TC
+  tc_roman = VALUE #(
+                    ( tc = 1 exp = 'I' )
+                    ( tc = 2 exp = 'II' )
+                    ( tc = 3 exp = 'III' )
+                    ( tc = 4 exp = 'IV' )
+                    ( tc = 5 exp = 'V' )
+                    ( tc = 6 exp = 'VI' )
+                    ( tc = 7 exp = 'VII' )
+                    ( tc = 8 exp = 'VIII' )
+                    ( tc = 9 exp = 'IX' )
+                    ( tc = 10 exp = 'X' )
+                    ( tc = 11 exp = 'XI' )
+                    ( tc = 12 exp = 'XII' )
+                    ( tc = 13 exp = 'XIII' )
+                    ( tc = 14 exp = 'XIV' )
+                    ( tc = 15 exp = 'XV' )
+                    ( tc = 17 exp = 'XVII' )
+                    ( tc = 19 exp = 'XIX' )
+                    ( tc = 20 exp = 'XX' )
+                    ( tc = 24 exp = 'XXIV' )
+                    ( tc = 33 exp = 'XXXIII' )
+                    ( tc = 38 exp = 'XXXVIII' )
+                    ( tc = 39 exp = 'XXXIX' )
+                    ( tc = 43 exp = 'XLIII' )
+                    ( tc = 94 exp = 'XCIV' )
+                    ( tc = 50 exp = 'L' )
+                    ( tc = 61 exp = 'LXI' )
+                    ( tc = 89 exp = 'LXXXIX' )
+                    ( tc = 449 exp = 'CDXLIX' )
+                    ( tc = 60 exp = 'LX')
+( tc = 70 exp = 'LXX')
+( tc = 80 exp = 'LXXX')
+( tc = 90 exp = 'XC')
+( tc = 100 exp = 'C')
+( tc = 200 exp = 'CC')
+( tc = 300 exp = 'CCC')
+( tc = 400 exp = 'CD')
+ ( tc = 500 exp = 'D')
+( tc = 600 exp = 'DC')
+( tc = 700 exp = 'DCC')
+( tc = 800 exp = 'DCCC')
+( tc = 900 exp = 'CM')
+( tc = 1000 exp = 'M')
+( tc = 144 exp = 'CXLIV')  " Random example within range
+( tc = 449 exp = 'CDXLIX')
+( tc = 999 exp = 'CMXCIX')
+( tc = 3494 exp = 'MMMCDXCIV' ) ).
+
+
+ENDMETHOD.
+METHOD setup.
+  cud = NEW #(  ).
+ENDMETHOD.
+
+  METHOD test_conversion.
+*  skip_test( ).
+    LOOP AT tc_roman INTO DATA(ls_tc).
+
+      assert(  cud->convert_to_roman_number( ls_tc-tc  )
+                       )->add_message( |Failed tc { ls_tc-tc  }|
+                       )->equals( exp = ls_tc-exp
+                                  quit = dont_quit
+                                  ).
+    ENDLOOP.
+  ENDMETHOD.
+
+method test_to_string.
+    data(stringbuffer) = new lstringbuffer(  ).
+    stringbuffer->push( 'Hi!' ).
+    assert( stringbuffer->tostring( ) )->equals( 'Hi!' ).
+    stringbuffer->pop( ).
+    assert( stringbuffer->tostring( ) )->initial( ).
+    assert(
+        stringbuffer->push( 'Hi!')->push( `I'm a string buffer` )->push( `♥` )->tostring( ` ` )
+    )->equals( `Hi! I'm a string buffer ♥`).
+
+ENDMETHOD.
+METHOD teardown.
+free cud.
+endmethod.
+method test_casting_to_char.
+    data(stringbuffer) = new lstringbuffer(  ).
+    data(int) = 493.
+     stringbuffer->push( int ).
+     assert( stringbuffer->condense( )->tostring( ) )->equals( '493' ).
+ENDMETHOD.
+method test_char_tab.
+data(stringbuffer) = new lstringbuffer(  ).
+stringbuffer->push( '123' )->push( '456' ).
+data test_tab type lstringbuffer=>tt_char_tab.
+test_tab = VALUE #( for i = 1 while i <= 6 ( conv #( i ) ) ).
+assert(  stringbuffer->get_char_tab(  ) )->equals( test_tab ).
+ENDMETHOD.
+endclass.
