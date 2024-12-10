@@ -1,0 +1,87 @@
+CLASS zzdemo_roman_numbers_conv_tdd DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+  TYPES: t_char type c LENGTH 1,
+         begin of ty_char_tab,
+         char type c LENGTH 1 ,
+         end of ty_char_tab,
+         tt_char_tab type table of ty_char_tab WITH EMPTY KEY.
+         TYPES: begin of symbol,
+         number type i,
+         roman type string,
+         end of symbol.
+  methods convert_to_roman_number
+  IMPORTING !number type i
+  RETURNING VALUE(roman) TYPE string.
+    METHODS constructor.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+  data symbols TYPE TABLE of symbol.
+   data ls_symbol TYPE symbol.
+
+ENDCLASS.
+
+
+
+CLASS zzdemo_roman_numbers_conv_tdd IMPLEMENTATION.
+  METHOD constructor.
+    symbols = VALUE #(
+    ( number = 1000 roman = 'M')
+    ( number = 500 roman = 'D')
+    ( number = 100 roman = 'C')
+    ( number = 50 roman = 'L')
+    ( number = 10 roman = 'X')
+    ( number = 5 roman = 'V')
+    ( number = 1 roman = 'I')
+     ).
+
+  ENDMETHOD.
+
+  METHOD convert_to_roman_number.
+    DATA(lnumber) = number.
+    DATA(buffer) = NEW lstringbuffer( ).
+    data(_4_and_9) = new lstringbuffer( ).
+
+  LOOP AT symbols INTO ls_symbol.
+
+    if lnumber = 0.
+        exit.
+     endif.
+
+    _4_and_9->push( lnumber ).
+    data(char_tab) = _4_and_9->get_char_tab( ).
+    data(positions) = lines( char_tab ). "Or strlen( _4_and_9->tostring( ) )
+    _4_and_9->pop( ). " remove from the stack
+    case value #( char_tab[ 1 ] optional ) .
+    when  '4'.
+       data(powerof10) = conv i( 10 ** ( positions - 1 ) ) .
+       buffer->push( symbols[ number = powerof10 ]-roman ).
+       buffer->push( symbols[ number = 10 / 2 * powerof10 ]-roman ).
+       lnumber -= 4 * powerof10.
+       continue.
+     when '9'.
+       powerof10 =  10 ** ( positions - 1 ) .
+       buffer->push( symbols[ number = powerof10 ]-roman ).
+       buffer->push( symbols[ number = 10 * powerof10 ]-roman ).
+       lnumber -= 9 * powerof10.
+       continue.
+   endcase.
+
+    WHILE lnumber >= ls_symbol-number.
+
+      lnumber -= ls_symbol-number.
+      buffer->push( ls_symbol-roman ).
+    ENDWHILE.
+  ENDLOOP.
+
+    RETURN buffer->tostring( ).
+
+  ENDMETHOD.
+
+
+ENDCLASS.
